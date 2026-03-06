@@ -1,8 +1,13 @@
 package src.service;
 
+import java.math.MathContext;
 import java.util.*;
 
 public class TradeService {
+
+    private static int compare(Object a, Object b) {
+        return a > b;
+    }
 
     public static class Trade {
         private String symbol;
@@ -46,7 +51,8 @@ public class TradeService {
      * }
      */
     public Map<String, Integer> countTradesBySymbol(List<Trade> trades) {
-        return null;
+
+        return createTradeCountMap(trades);
     }
 
     /**
@@ -58,7 +64,15 @@ public class TradeService {
      * symbol 이름 오름차순
      */
     public String findMostTradedSymbol(List<Trade> trades) {
-        return null;
+        Map<String, Integer> tradeCountMap = createTradeCountMap(trades);
+
+        return tradeCountMap
+                .keySet().stream()
+                .sorted(
+                        Comparator.comparing(tradeCountMap::get).reversed()
+                                .thenComparing(TradeService::compare)
+                )
+                .findFirst().get();
     }
 
     /**
@@ -67,7 +81,10 @@ public class TradeService {
      * 특정 user 의 거래만 반환하세요.
      */
     public List<Trade> findTradesByUser(List<Trade> trades, String userId) {
-        return null;
+
+        return trades.stream()
+                .filter(t -> t.getUserId().equals(userId))
+                .toList();
     }
 
     /**
@@ -77,7 +94,12 @@ public class TradeService {
      * price 같으면 symbol 오름차순
      */
     public List<Trade> sortTrades(List<Trade> trades) {
-        return null;
+        return trades.stream()
+                .sorted(
+                        Comparator.comparing(Trade::getPrice).reversed()
+                                .thenComparing(Trade::getSymbol)
+                )
+                .toList();
     }
 
     /**
@@ -92,7 +114,22 @@ public class TradeService {
      * }
      */
     public Map<String, Double> calculateAveragePrice(List<Trade> trades) {
-        return null;
+        Map<String, List<Trade>> tradeMap = new HashMap<>();
+        for (Trade t : trades) {
+            tradeMap.putIfAbsent(t.getSymbol(), new ArrayList<>()).add(t);
+        }
+
+        Map<String, Double> avgMap = new HashMap<>();
+        for (String s : tradeMap.keySet()) {
+            int total = 0;
+            int count = 0;
+            for (Trade t : tradeMap.get(s)) {
+                total += t.getPrice() * t.getQuantity();
+                count += t.getQuantity();
+            }
+            avgMap.put(s, (double) (total / count));
+        }
+        return avgMap;
     }
 
     /**
@@ -102,7 +139,11 @@ public class TradeService {
      * 가장 가격이 높은 Trade 를 반환하세요.
      */
     public Trade findHighestPriceTrade(List<Trade> trades) {
-        return null;
+        return trades.stream()
+                .sorted(
+                        Comparator.comparing(t -> t.getPrice() * t.getQuantity())
+                )
+                .findFirst().get();
     }
 
     /**
@@ -113,7 +154,19 @@ public class TradeService {
      * quantity 합계
      */
     public Map<String, Integer> calculateTotalQuantityBySymbol(List<Trade> trades) {
-        return null;
+        Map<String, Integer> symbolMap = new HashMap<>();
+        for (Trade t : trades) {
+            symbolMap.put(t.getSymbol(), symbolMap.getOrDefault(t.getSymbol(), 0) + t.getQuantity());
+        }
+        return symbolMap;
+    }
+
+    private Map<String, Integer> createTradeCountMap(List<Trade> trades) {
+        Map<String, Integer> tradeCountMap = new HashMap<>();
+        for (Trade t : trades) {
+            tradeCountMap.put(t.getSymbol(), tradeCountMap.getOrDefault(t.getSymbol(), 0)+1);
+        }
+        return tradeCountMap;
     }
 
 }
